@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/schedule_screen.dart'; // 追加
 
-void main() {
+void main() async {
+  // asyncを追加
+  // プラグインを使用する前にFlutterバインディングを確実に初期化
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 

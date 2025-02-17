@@ -3,6 +3,8 @@ import '../models/task.dart';
 import '../models/schedule_item.dart';
 import '../widgets/time_table_view.dart';
 import '../widgets/task_list_view.dart';
+import '../setting/setting_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -59,8 +61,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: 設定画面への遷移
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+              // 設定画面から戻ってきたら設定を再読み込み
+              await _loadSettings();
             },
           ),
         ],
@@ -104,5 +113,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   void _showAddTaskDialog() {
     // TODO: タスク追加ダイアログの表示
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      startTime = TimeOfDay(
+        hour: prefs.getInt('startHour') ?? 6,
+        minute: prefs.getInt('startMinute') ?? 0,
+      );
+      endTime = TimeOfDay(
+        hour: prefs.getInt('endHour') ?? 22,
+        minute: prefs.getInt('endMinute') ?? 0,
+      );
+    });
   }
 }
