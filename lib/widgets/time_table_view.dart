@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/schedule_item.dart';
-import '../models/task.dart'; // Used via ScheduleItem.task
+import '../models/task.dart';
 
 class TimeTableView extends StatelessWidget {
   final TimeOfDay startTime;
@@ -38,11 +38,10 @@ class TimeTableView extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         border: Border(
-                          bottom:
-                              BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          bottom: BorderSide(color: Colors.grey.withAlpha(77)),
                         ),
                         color: candidateData.isNotEmpty
-                            ? Colors.blue.withOpacity(0.1)
+                            ? Colors.blue.withAlpha(26)
                             : null,
                       ),
                       child: Row(
@@ -54,7 +53,7 @@ class TimeTableView extends StatelessWidget {
                             decoration: BoxDecoration(
                               border: Border(
                                 right: BorderSide(
-                                    color: Colors.grey.withOpacity(0.3)),
+                                    color: Colors.grey.withAlpha(77)),
                               ),
                             ),
                             child: Text(
@@ -88,11 +87,11 @@ class TimeTableView extends StatelessWidget {
                     height: height,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: item.task.color.withOpacity(0.8),
+                        color: item.task.color.withAlpha(204),
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withAlpha(26),
                             offset: const Offset(0, 2),
                             blurRadius: 4,
                           ),

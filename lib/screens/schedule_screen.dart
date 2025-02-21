@@ -15,17 +15,16 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  // 設定から取得する想定
   TimeOfDay startTime = const TimeOfDay(hour: 6, minute: 0);
   TimeOfDay endTime = const TimeOfDay(hour: 22, minute: 0);
 
-  // テスト用のタスクデータを追加
+  // テスト用のタスクデータ
   List<Task> tasks = [
     Task(
       id: '1',
       title: '仕事',
       color: Colors.blue,
-      targetDuration: const Duration(hours: 1),
+      targetDuration: const Duration(hours: 8),
     ),
     Task(
       id: '2',
@@ -37,35 +36,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       id: '3',
       title: '運動',
       color: Colors.orange,
-      targetDuration: const Duration(minutes: 30),
+      targetDuration: const Duration(hours: 1),
     ),
   ];
 
-  // テスト用のスケジュールデータを追加
-  List<ScheduleItem> scheduleItems = [
-    ScheduleItem(
-      id: '1',
-      task: Task(
-        id: '1',
-        title: '仕事',
-        color: Colors.blue,
-        targetDuration: const Duration(hours: 1),
-      ),
-      startTime: TimeOfDay(hour: 9, minute: 0),
-      endTime: TimeOfDay(hour: 12, minute: 0),
-    ),
-    ScheduleItem(
-      id: '2',
-      task: Task(
-        id: '2',
-        title: '勉強',
-        color: Colors.green,
-        targetDuration: const Duration(hours: 2),
-      ),
-      startTime: TimeOfDay(hour: 14, minute: 0),
-      endTime: TimeOfDay(hour: 16, minute: 0),
-    ),
-  ];
+  // テスト用のスケジュールデータ
+  List<ScheduleItem> scheduleItems = [];
 
   @override
   Widget build(BuildContext context) {
@@ -88,40 +64,45 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          TaskPalette(
-            tasks: tasks,
-            scheduleItems: scheduleItems,
-            onTaskAdd: (task) {
-              // タスク追加ロジック
-            },
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TimeTableView(
-                    startTime: startTime,
-                    endTime: endTime,
-                    scheduleItems: scheduleItems,
-                    onTimeSlotTap: _handleTimeSlotTap,
-                    onTaskDrop: _handleTaskDrop,
-                  ),
-                ),
-                // タスク一覧
-                Expanded(
-                  flex: 1,
-                  child: TaskListView(
-                    tasks: tasks,
-                    onTaskTap: _handleTaskTap,
-                  ),
-                ),
-              ],
+      body: SafeArea(
+        child: Row(
+          children: [
+            // タイムテーブル
+            Expanded(
+              flex: 4,
+              child: TimeTableView(
+                startTime: startTime,
+                endTime: endTime,
+                scheduleItems: scheduleItems,
+                onTimeSlotTap: _handleTimeSlotTap,
+                onTaskDrop: _handleTaskDrop,
+              ),
             ),
-          ),
-        ],
+            // 右側のタスクパレット
+            Container(
+              width: 150,
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: TaskPalette(
+                      tasks: tasks,
+                      scheduleItems: scheduleItems,
+                      onTaskAdd: (task) {
+                        // タスク追加ロジック
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 80), // FloatingActionButtonのスペース
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskDialog,
@@ -131,7 +112,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _handleTimeSlotTap(TimeOfDay time) {
-    // TODO: 選択された時間枠の処理
+    // 時間枠タップ時の処理
+    print('Tapped time: ${time.hour}:${time.minute}');
   }
 
   void _handleTaskTap(Task task) {
@@ -139,23 +121,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _showAddTaskDialog() {
-    // TODO: タスク追加ダイアログの表示
+    // タスク追加ダイアログの処理
+    print('Add task button pressed');
   }
 
   void _handleTaskDrop(Task task, TimeOfDay startTime) {
-    // デフォルトで1時間の予定を追加
-    final endTime = TimeOfDay(
-      hour: startTime.hour + 1,
-      minute: startTime.minute,
-    );
-
     setState(() {
       scheduleItems.add(
         ScheduleItem(
-          id: DateTime.now().toString(), // 一意のIDを生成
+          id: DateTime.now().toString(),
           task: task,
           startTime: startTime,
-          endTime: endTime,
+          endTime: TimeOfDay(
+            hour: startTime.hour + 1,
+            minute: startTime.minute,
+          ),
         ),
       );
     });
