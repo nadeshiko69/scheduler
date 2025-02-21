@@ -7,6 +7,7 @@ class TimeTableView extends StatelessWidget {
   final TimeOfDay endTime;
   final List<ScheduleItem> scheduleItems;
   final Function(TimeOfDay) onTimeSlotTap;
+  final Function(Task, TimeOfDay) onTaskDrop;
 
   const TimeTableView({
     super.key,
@@ -14,6 +15,7 @@ class TimeTableView extends StatelessWidget {
     required this.endTime,
     required this.scheduleItems,
     required this.onTimeSlotTap,
+    required this.onTaskDrop,
   });
 
   @override
@@ -29,36 +31,42 @@ class TimeTableView extends StatelessWidget {
             Column(
               children: List.generate(_calculateSlotCount(), (index) {
                 final currentTime = _indexToTime(index);
-                return GestureDetector(
-                  onTap: () => onTimeSlotTap(currentTime),
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                return DragTarget<Task>(
+                  onAccept: (task) => onTaskDrop(task, currentTime),
+                  builder: (context, candidateData, rejectedData) {
+                    return Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom:
+                              BorderSide(color: Colors.grey.withOpacity(0.3)),
+                        ),
+                        color: candidateData.isNotEmpty
+                            ? Colors.blue.withOpacity(0.1)
+                            : null,
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        // 時間表示
-                        Container(
-                          width: 60,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              right: BorderSide(
-                                  color: Colors.grey.withOpacity(0.3)),
+                      child: Row(
+                        children: [
+                          // 時間表示
+                          Container(
+                            width: 60,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: BorderSide(
+                                    color: Colors.grey.withOpacity(0.3)),
+                              ),
+                            ),
+                            child: Text(
+                              _formatTime(currentTime),
+                              style: const TextStyle(fontSize: 12),
                             ),
                           ),
-                          child: Text(
-                            _formatTime(currentTime),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                        const Expanded(child: SizedBox()),
-                      ],
-                    ),
-                  ),
+                          const Expanded(child: SizedBox()),
+                        ],
+                      ),
+                    );
+                  },
                 );
               }),
             ),
