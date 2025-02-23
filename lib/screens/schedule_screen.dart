@@ -55,15 +55,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
 
+  RewardedAd? _rewardedAd;
+  bool _isRewardedAdReady = false;
+
   @override
   void initState() {
     super.initState();
     _loadAd();
+    _loadRewardedAd();
   }
 
   void _loadAd() {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // テスト用広告ID
+      adUnitId: 'ca-app-pub-1142801310983686/7314491612', // 実際の広告ユニットIDに変更
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -81,9 +85,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _bannerAd?.load();
   }
 
+  void _loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: 'ca-app-pub-1142801310983686~3761989910', // リワード広告のユニットID
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _isRewardedAdReady = true;
+        },
+        onAdFailedToLoad: (error) {
+          _isRewardedAdReady = false;
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _bannerAd?.dispose();
+    _rewardedAd?.dispose();
     super.dispose();
   }
 
@@ -300,9 +321,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
 
     if (shouldReset == true) {
-      setState(() {
-        scheduleItems.clear(); // 配置中のタスクをすべて削除
-      });
+      if (_isRewardedAdReady) {
+        _rewardedAd?.show(
+          onUserEarnedReward: (_, reward) {
+            setState(() {
+              scheduleItems.clear(); // 配置中のタスクをすべて削除
+            });
+          },
+        );
+        _rewardedAd = null;
+        _isRewardedAdReady = false;
+        _loadRewardedAd(); // 次回のために新しい広告を読み込む
+      } else {
+        setState(() {
+          scheduleItems.clear(); // 広告が準備できていない場合は直接削除
+        });
+      }
     }
   }
 }
