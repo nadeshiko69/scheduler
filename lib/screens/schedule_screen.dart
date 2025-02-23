@@ -84,6 +84,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 scheduleItems: scheduleItems,
                 onTimeSlotTap: _handleTimeSlotTap,
                 onTaskDrop: _handleTaskDrop,
+                onScheduleResize: _handleScheduleResize,
+                onScheduleDelete: _handleScheduleDelete,
               ),
             ),
             // 右側のタスクパレット
@@ -156,10 +158,55 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     });
   }
 
-  void _handleTaskDelete(Task task) {
+  void _handleTaskDelete(Task task) async {
+    // 確認ダイアログを表示
+    final bool? shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タスクの削除'),
+        content: Text('「${task.title}」を削除しますか？\n関連するスケジュールもすべて削除されます。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    // ユーザーが削除を確認した場合のみ削除を実行
+    if (shouldDelete == true) {
+      setState(() {
+        tasks.removeWhere((t) => t.id == task.id);
+        scheduleItems.removeWhere((item) => item.task.id == task.id);
+      });
+    }
+  }
+
+  void _handleScheduleResize(ScheduleItem item, TimeOfDay newEndTime) {
     setState(() {
-      tasks.removeWhere((t) => t.id == task.id);
-      scheduleItems.removeWhere((item) => item.task.id == task.id);
+      final index = scheduleItems.indexWhere((i) => i.id == item.id);
+      if (index != -1) {
+        scheduleItems[index] = ScheduleItem(
+          id: item.id,
+          task: item.task,
+          startTime: item.startTime,
+          endTime: newEndTime,
+        );
+      }
+    });
+  }
+
+  void _handleScheduleDelete(ScheduleItem item) {
+    setState(() {
+      scheduleItems.removeWhere((i) => i.id == item.id);
     });
   }
 
