@@ -40,37 +40,37 @@ class TimeTableView extends StatelessWidget {
             // 時間枠のグリッド
             Column(
               children: List.generate(_calculateSlotCount(), (index) {
-        final currentTime = _indexToTime(index);
+                final currentTime = _indexToTime(index);
                 return DragTarget<Task>(
                   onAccept: (task) => onTaskDrop(task, currentTime),
                   builder: (context, candidateData, rejectedData) {
                     return Container(
                       height: 40,
-            decoration: BoxDecoration(
-              border: Border(
+                      decoration: BoxDecoration(
+                        border: Border(
                           bottom: BorderSide(color: Colors.grey.withAlpha(77)),
-              ),
+                        ),
                         color: candidateData.isNotEmpty
                             ? Colors.blue.withAlpha(26)
                             : null,
-            ),
-            child: Row(
-              children: [
-                // 時間表示
-                Container(
-                  width: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    border: Border(
+                      ),
+                      child: Row(
+                        children: [
+                          // 時間表示
+                          Container(
+                            width: 60,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              border: Border(
                                 right: BorderSide(
                                     color: Colors.grey.withAlpha(77)),
-                    ),
-                  ),
-                  child: Text(
-                    _formatTime(currentTime),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
+                              ),
+                            ),
+                            child: Text(
+                              _formatTime(currentTime),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
                           const Expanded(child: SizedBox()),
                         ],
                       ),
@@ -106,12 +106,12 @@ class TimeTableView extends StatelessWidget {
                     ),
                   );
                 }).toList(),
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
   }
 
   double _calculateTopPosition(TimeOfDay time) {
@@ -211,16 +211,11 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
           },
           child: Container(
             decoration: BoxDecoration(
-              color: widget.scheduleItem.task.color.withAlpha(204), // 0.8 * 255
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-                bottomLeft: Radius.circular(0), // 下部の角丸を削除
-                bottomRight: Radius.circular(0), // 下部の角丸を削除
-              ),
+              color: widget.scheduleItem.task.color.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(26),
+                  color: Colors.black.withOpacity(0.1),
                   offset: const Offset(0, 2),
                   blurRadius: 4,
                 ),
@@ -289,8 +284,7 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
             child: Container(
               height: 16,
               decoration: BoxDecoration(
-                color:
-                    widget.scheduleItem.task.color.withAlpha(51), // 0.2 * 255
+                color: Colors.black.withOpacity(0.1),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
                   bottomRight: Radius.circular(8),
@@ -301,7 +295,7 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
                   width: 20,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(128),
+                    color: Colors.white.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
