@@ -87,15 +87,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   void _loadRewardedAd() {
     RewardedAd.load(
-      adUnitId: 'ca-app-pub-1142801310983686~3761989910', // リワード広告のユニットID
+      adUnitId: 'ca-app-pub-1142801310983686/4361025214', // リワード広告の正しいユニットID
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           _isRewardedAdReady = true;
+          print('Rewarded ad loaded'); // デバッグ用
         },
         onAdFailedToLoad: (error) {
           _isRewardedAdReady = false;
+          print('Rewarded ad failed to load: $error'); // デバッグ用
         },
       ),
     );
@@ -321,20 +323,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
 
     if (shouldReset == true) {
-      if (_isRewardedAdReady) {
-        _rewardedAd?.show(
-          onUserEarnedReward: (_, reward) {
-            setState(() {
-              scheduleItems.clear(); // 配置中のタスクをすべて削除
-            });
-          },
-        );
-        _rewardedAd = null;
-        _isRewardedAdReady = false;
-        _loadRewardedAd(); // 次回のために新しい広告を読み込む
+      if (_isRewardedAdReady && _rewardedAd != null) {
+        try {
+          _rewardedAd?.show(
+            onUserEarnedReward: (_, reward) {
+              print('User earned reward: ${reward.amount}'); // デバッグ用
+              setState(() {
+                scheduleItems.clear();
+              });
+            },
+          );
+          _rewardedAd = null;
+          _isRewardedAdReady = false;
+          _loadRewardedAd(); // 次回のために新しい広告を読み込む
+        } catch (e) {
+          print('Error showing rewarded ad: $e'); // デバッグ用
+          setState(() {
+            scheduleItems.clear(); // エラーの場合は直接削除
+          });
+        }
       } else {
+        print('Rewarded ad not ready'); // デバッグ用
         setState(() {
-          scheduleItems.clear(); // 広告が準備できていない場合は直接削除
+          scheduleItems.clear();
         });
       }
     }
