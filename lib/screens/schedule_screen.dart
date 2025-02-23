@@ -15,6 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/task_palette.dart';
 import '../widgets/add_task_dialog.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -63,11 +66,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     super.initState();
     _loadAd();
     _loadRewardedAd();
+    _loadData();
   }
 
   void _loadAd() {
+    final String bannerAdUnitId = Platform.isAndroid
+        ? 'ca-app-pub-1142801310983686/7314491612' // Android用バナー広告ID
+        : 'ca-app-pub-1142801310983686/9393590549'; // iOS用バナー広告ID（修正）
+
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-1142801310983686/7314491612', // 実際の広告ユニットIDに変更
+      adUnitId: bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -86,18 +94,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _loadRewardedAd() {
+    final String rewardedAdUnitId = Platform.isAndroid
+        ? 'ca-app-pub-1142801310983686/4361025214' // Android用リワード広告ID
+        : 'ca-app-pub-1142801310983686/6492364538'; // iOS用リワード広告ID（修正）
+
     RewardedAd.load(
-      adUnitId: 'ca-app-pub-1142801310983686/4361025214', // リワード広告の正しいユニットID
+      adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           _isRewardedAdReady = true;
-          print('Rewarded ad loaded'); // デバッグ用
+          print('Rewarded ad loaded');
         },
         onAdFailedToLoad: (error) {
           _isRewardedAdReady = false;
-          print('Rewarded ad failed to load: $error'); // デバッグ用
+          print('Rewarded ad failed to load: $error');
         },
       ),
     );
@@ -114,7 +126,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('スケジュール'),
+        title: const Text('Daily Scheduler'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -215,6 +227,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       setState(() {
         tasks.add(newTask);
       });
+      _saveData();
     }
   }
 
@@ -232,6 +245,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
       );
     });
+    _saveData();
   }
 
   void _handleTaskDelete(Task task) async {
@@ -263,6 +277,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         tasks.removeWhere((t) => t.id == task.id);
         scheduleItems.removeWhere((item) => item.task.id == task.id);
       });
+      _saveData();
     }
   }
 
@@ -278,12 +293,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         );
       }
     });
+    _saveData();
   }
 
   void _handleScheduleDelete(ScheduleItem item) {
     setState(() {
       scheduleItems.removeWhere((i) => i.id == item.id);
     });
+    _saveData();
   }
 
   Future<void> _loadSettings() async {
@@ -327,27 +344,81 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         try {
           _rewardedAd?.show(
             onUserEarnedReward: (_, reward) {
-              print('User earned reward: ${reward.amount}'); // デバッグ用
               setState(() {
                 scheduleItems.clear();
               });
+              // リワード広告視聴後にメッセージを表示
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('タイムテーブルをクリーンしました'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
             },
           );
           _rewardedAd = null;
           _isRewardedAdReady = false;
-          _loadRewardedAd(); // 次回のために新しい広告を読み込む
+          _loadRewardedAd();
         } catch (e) {
-          print('Error showing rewarded ad: $e'); // デバッグ用
+          print('Error showing rewarded ad: $e');
           setState(() {
-            scheduleItems.clear(); // エラーの場合は直接削除
+            scheduleItems.clear();
           });
+          // エラー時もメッセージを表示
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('タイムテーブルをクリーンしました'),
+              duration: Duration(seconds: 2),
+            ),
+          );
         }
       } else {
-        print('Rewarded ad not ready'); // デバッグ用
         setState(() {
           scheduleItems.clear();
         });
+        // 広告なしでクリアした場合もメッセージを表示
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('タイムテーブルをクリーンしました'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     }
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // タスクの読み込み
+    final tasksString = prefs.getString('tasks');
+    if (tasksString != null) {
+      final tasksJson = jsonDecode(tasksString) as List;
+      setState(() {
+        tasks = tasksJson.map((json) => Task.fromJson(json)).toList();
+      });
+    }
+
+    // スケジュールの読み込み
+    final scheduleString = prefs.getString('schedule');
+    if (scheduleString != null) {
+      final scheduleJson = jsonDecode(scheduleString) as List;
+      setState(() {
+        scheduleItems =
+            scheduleJson.map((json) => ScheduleItem.fromJson(json)).toList();
+      });
+    }
+  }
+
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // タスクの保存
+    final tasksJson = tasks.map((task) => task.toJson()).toList();
+    await prefs.setString('tasks', jsonEncode(tasksJson));
+
+    // スケジュールの保存
+    final scheduleJson = scheduleItems.map((item) => item.toJson()).toList();
+    await prefs.setString('schedule', jsonEncode(scheduleJson));
   }
 }
