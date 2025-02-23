@@ -14,6 +14,10 @@ import '../setting/setting_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/task_palette.dart';
 import '../widgets/add_task_dialog.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -51,11 +55,78 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // テスト用のスケジュールデータ
   List<ScheduleItem> scheduleItems = [];
 
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
+
+  RewardedAd? _rewardedAd;
+  bool _isRewardedAdReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+    _loadRewardedAd();
+    _loadData();
+  }
+
+  void _loadAd() {
+    final String bannerAdUnitId = Platform.isAndroid
+        ? 'ca-app-pub-1142801310983686/7314491612' // Android用バナー広告ID
+        : 'ca-app-pub-1142801310983686/9393590549'; // iOS用バナー広告ID（修正）
+
+    _bannerAd = BannerAd(
+      adUnitId: bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  void _loadRewardedAd() {
+    final String rewardedAdUnitId = Platform.isAndroid
+        ? 'ca-app-pub-1142801310983686/4361025214' // Android用リワード広告ID
+        : 'ca-app-pub-1142801310983686/6492364538'; // iOS用リワード広告ID（修正）
+
+    RewardedAd.load(
+      adUnitId: rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _isRewardedAdReady = true;
+          print('Rewarded ad loaded');
+        },
+        onAdFailedToLoad: (error) {
+          _isRewardedAdReady = false;
+          print('Rewarded ad failed to load: $error');
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    _rewardedAd?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('スケジュール'),
+        title: const Text('Daily Scheduler'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -76,43 +147,57 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ],
       ),
       body: SafeArea(
-        child: Row(
+        child: Column(
           children: [
-            // タイムテーブル
             Expanded(
-              flex: 4,
-              child: TimeTableView(
-                startTime: startTime,
-                endTime: endTime,
-                scheduleItems: scheduleItems,
-                onTimeSlotTap: _handleTimeSlotTap,
-                onTaskDrop: _handleTaskDrop,
-                onScheduleResize: _handleScheduleResize,
-                onScheduleDelete: _handleScheduleDelete,
-              ),
-            ),
-            // 右側のタスクパレット
-            Container(
-              width: 150,
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: Colors.grey[300]!),
-                ),
-              ),
-              child: Column(
+              child: Row(
                 children: [
+                  // タイムテーブル
                   Expanded(
-                    child: TaskPalette(
-                      tasks: tasks,
+                    flex: 4,
+                    child: TimeTableView(
+                      startTime: startTime,
+                      endTime: endTime,
                       scheduleItems: scheduleItems,
-                      onTaskAdd: (task) {},
-                      onTaskDelete: _handleTaskDelete,
+                      onTimeSlotTap: _handleTimeSlotTap,
+                      onTaskDrop: _handleTaskDrop,
+                      onScheduleResize: _handleScheduleResize,
+                      onScheduleDelete: _handleScheduleDelete,
                     ),
                   ),
-                  SizedBox(height: 80), // FloatingActionButtonのスペース
+                  // 右側のタスクパレット
+                  Container(
+                    width: 150,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(color: Colors.grey[300]!),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: TaskPalette(
+                            tasks: tasks,
+                            scheduleItems: scheduleItems,
+                            onTaskAdd: (task) {},
+                            onTaskDelete: _handleTaskDelete,
+                          ),
+                        ),
+                        SizedBox(height: 80), // FloatingActionButtonのスペース
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
+            // 広告を表示
+            if (_isAdLoaded)
+              Container(
+                alignment: Alignment.center,
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
           ],
         ),
       ),
@@ -142,6 +227,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       setState(() {
         tasks.add(newTask);
       });
+      _saveData();
     }
   }
 
@@ -159,6 +245,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
       );
     });
+    _saveData();
   }
 
   void _handleTaskDelete(Task task) async {
@@ -190,6 +277,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         tasks.removeWhere((t) => t.id == task.id);
         scheduleItems.removeWhere((item) => item.task.id == task.id);
       });
+      _saveData();
     }
   }
 
@@ -205,12 +293,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         );
       }
     });
+    _saveData();
   }
 
   void _handleScheduleDelete(ScheduleItem item) {
     setState(() {
       scheduleItems.removeWhere((i) => i.id == item.id);
     });
+    _saveData();
   }
 
   Future<void> _loadSettings() async {
@@ -250,9 +340,85 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
 
     if (shouldReset == true) {
+      if (_isRewardedAdReady && _rewardedAd != null) {
+        try {
+          _rewardedAd?.show(
+            onUserEarnedReward: (_, reward) {
+              setState(() {
+                scheduleItems.clear();
+              });
+              // リワード広告視聴後にメッセージを表示
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('タイムテーブルをクリーンしました'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          );
+          _rewardedAd = null;
+          _isRewardedAdReady = false;
+          _loadRewardedAd();
+        } catch (e) {
+          print('Error showing rewarded ad: $e');
+          setState(() {
+            scheduleItems.clear();
+          });
+          // エラー時もメッセージを表示
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('タイムテーブルをクリーンしました'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        setState(() {
+          scheduleItems.clear();
+        });
+        // 広告なしでクリアした場合もメッセージを表示
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('タイムテーブルをクリーンしました'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // タスクの読み込み
+    final tasksString = prefs.getString('tasks');
+    if (tasksString != null) {
+      final tasksJson = jsonDecode(tasksString) as List;
       setState(() {
-        scheduleItems.clear(); // 配置中のタスクをすべて削除
+        tasks = tasksJson.map((json) => Task.fromJson(json)).toList();
       });
     }
+
+    // スケジュールの読み込み
+    final scheduleString = prefs.getString('schedule');
+    if (scheduleString != null) {
+      final scheduleJson = jsonDecode(scheduleString) as List;
+      setState(() {
+        scheduleItems =
+            scheduleJson.map((json) => ScheduleItem.fromJson(json)).toList();
+      });
+    }
+  }
+
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // タスクの保存
+    final tasksJson = tasks.map((task) => task.toJson()).toList();
+    await prefs.setString('tasks', jsonEncode(tasksJson));
+
+    // スケジュールの保存
+    final scheduleJson = scheduleItems.map((item) => item.toJson()).toList();
+    await prefs.setString('schedule', jsonEncode(scheduleJson));
   }
 }

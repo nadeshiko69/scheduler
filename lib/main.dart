@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'screens/schedule_screen.dart'; // 追加
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() async {
   // asyncを追加
   // プラグインを使用する前にFlutterバインディングを確実に初期化
   WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
 
   runApp(const MyApp());
 }
