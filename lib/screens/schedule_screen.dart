@@ -58,6 +58,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         title: const Text('スケジュール'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _showResetConfirmation,
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () async {
               await Navigator.push(
@@ -66,7 +70,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   builder: (context) => const SettingsScreen(),
                 ),
               );
-              // 設定画面から戻ってきたら設定を再読み込み
               await _loadSettings();
             },
           ),
@@ -222,5 +225,34 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         minute: prefs.getInt('endMinute') ?? 0,
       );
     });
+  }
+
+  void _showResetConfirmation() async {
+    final shouldReset = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('スケジュールのリセット'),
+        content: const Text('配置中のタスクをすべて削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldReset == true) {
+      setState(() {
+        scheduleItems.clear(); // 配置中のタスクをすべて削除
+      });
+    }
   }
 }
