@@ -1,3 +1,9 @@
+// 時間テーブルビュー
+// 時間枠のグリッドを表示できる
+// スケジュールブロックを表示できる
+// 時間枠をタップすると、時間枠の詳細画面に遷移する
+// スケジュールブロックをドラッグアンドドロップでスケジュールに追加できる
+
 import 'package:flutter/material.dart';
 import '../models/schedule_item.dart';
 import '../models/task.dart';

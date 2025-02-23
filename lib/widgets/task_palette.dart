@@ -1,3 +1,8 @@
+// タスクパレット
+// タスクを表示できる
+// タスクをドラッグアンドドロップでスケジュールに追加できる
+// タスクを削除できる
+
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/schedule_item.dart';
@@ -6,12 +11,14 @@ class TaskPalette extends StatelessWidget {
   final List<Task> tasks;
   final List<ScheduleItem> scheduleItems;
   final Function(Task) onTaskAdd;
+  final Function(Task) onTaskDelete;
 
   const TaskPalette({
     super.key,
     required this.tasks,
     required this.scheduleItems,
     required this.onTaskAdd,
+    required this.onTaskDelete,
   });
 
   Duration _calculateTaskDuration(Task task) {
@@ -61,29 +68,43 @@ class TaskPalette extends StatelessWidget {
       child: Container(
         height: 80,
         padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Text(
-              task.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  task.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${usedDuration.inHours}h ${usedDuration.inMinutes % 60}m',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  '/ ${task.targetDuration.inHours}h',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${usedDuration.inHours}h ${usedDuration.inMinutes % 60}m',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-              ),
-            ),
-            Text(
-              '/ ${task.targetDuration.inHours}h',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                onPressed: () => onTaskDelete(task),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
             ),
           ],

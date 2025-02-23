@@ -1,3 +1,7 @@
+// スケジュールアイテム
+// タスク、開始時間、終了時間を持つ
+// スケジュールアイテムは、タスクのリストとして管理される
+
 import 'package:flutter/material.dart';
 import 'task.dart';
 

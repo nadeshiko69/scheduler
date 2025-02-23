@@ -1,3 +1,10 @@
+// スケジュール画面
+// タスクを追加、削除、編集できる
+// タスクをスケジュールに追加できる
+// スケジュールを表示できる
+// スケジュールを編集できる
+// スケジュールを削除できる
+
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/schedule_item.dart';
@@ -6,6 +13,7 @@ import '../widgets/task_list_view.dart';
 import '../setting/setting_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/task_palette.dart';
+import '../widgets/add_task_dialog.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -92,9 +100,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     child: TaskPalette(
                       tasks: tasks,
                       scheduleItems: scheduleItems,
-                      onTaskAdd: (task) {
-                        // タスク追加ロジック
-                      },
+                      onTaskAdd: (task) {},
+                      onTaskDelete: _handleTaskDelete,
                     ),
                   ),
                   SizedBox(height: 80), // FloatingActionButtonのスペース
@@ -120,9 +127,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // TODO: 選択されたタスクの処理
   }
 
-  void _showAddTaskDialog() {
-    // タスク追加ダイアログの処理
-    print('Add task button pressed');
+  void _showAddTaskDialog() async {
+    final newTask = await showDialog<Task>(
+      context: context,
+      builder: (context) => const AddTaskDialog(),
+    );
+
+    if (newTask != null) {
+      setState(() {
+        tasks.add(newTask);
+      });
+    }
   }
 
   void _handleTaskDrop(Task task, TimeOfDay startTime) {
@@ -138,6 +153,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
       );
+    });
+  }
+
+  void _handleTaskDelete(Task task) {
+    setState(() {
+      tasks.removeWhere((t) => t.id == task.id);
+      scheduleItems.removeWhere((item) => item.task.id == task.id);
     });
   }
 

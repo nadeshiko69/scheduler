@@ -1,3 +1,7 @@
+// タスク
+// タスク名、色、目標時間を持つ
+// タスクは、スケジュールアイテムのリストとして管理される
+
 import 'package:flutter/material.dart';
 
 class Task {

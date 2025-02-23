@@ -1,3 +1,7 @@
+// タスクリストビュー
+// タスクを表示できる
+// タスクをタップすると、タスク詳細画面に遷移する
+
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 

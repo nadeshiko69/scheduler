@@ -1,3 +1,7 @@
+// 設定画面
+// 開始時刻と終了時刻を設定できる
+// 設定を保存できる
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
