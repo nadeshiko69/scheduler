@@ -5,7 +5,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/extended_time_picker.dart';
-import '../extensions/time_of_day_extension.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -38,6 +37,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setInt('startMinute', _startTime.minute);
     await prefs.setInt('endHour', _endTime.hour);
     await prefs.setInt('endMinute', _endTime.minute);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
   }
 
   @override

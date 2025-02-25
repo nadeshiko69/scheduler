@@ -9,13 +9,11 @@ import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/schedule_item.dart';
 import '../widgets/time_table_view.dart';
-import '../widgets/task_list_view.dart';
 import '../setting/setting_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/task_palette.dart';
 import '../widgets/add_task_dialog.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -105,11 +103,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           _isRewardedAdReady = true;
-          print('Rewarded ad loaded');
+          // print('Rewarded ad loaded');
         },
         onAdFailedToLoad: (error) {
           _isRewardedAdReady = false;
-          print('Rewarded ad failed to load: $error');
+          // print('Rewarded ad failed to load: $error');
         },
       ),
     );
@@ -210,11 +208,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   void _handleTimeSlotTap(TimeOfDay time) {
     // 時間枠タップ時の処理
-    print('Tapped time: ${time.hour}:${time.minute}');
-  }
-
-  void _handleTaskTap(Task task) {
-    // TODO: 選択されたタスクの処理
+    // print('Tapped time: ${time.hour}:${time.minute}');
   }
 
   void _showAddTaskDialog() async {
@@ -318,6 +312,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _showResetConfirmation() async {
+    if (!mounted) return;
     final shouldReset = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -339,15 +334,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (shouldReset == true) {
       if (_isRewardedAdReady && _rewardedAd != null) {
         try {
           _rewardedAd?.show(
             onUserEarnedReward: (_, reward) {
+              if (!mounted) return;
               setState(() {
                 scheduleItems.clear();
               });
-              // リワード広告視聴後にメッセージを表示
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('タイムテーブルをクリーンしました'),
@@ -360,7 +356,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           _isRewardedAdReady = false;
           _loadRewardedAd();
         } catch (e) {
-          print('Error showing rewarded ad: $e');
+          // print('Error showing rewarded ad: $e');
           setState(() {
             scheduleItems.clear();
           });

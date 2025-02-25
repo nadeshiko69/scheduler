@@ -3,7 +3,6 @@
 // タスクは、スケジュールアイテムのリストとして管理される
 
 import 'package:flutter/material.dart';
-import 'dart:convert';
 
 class Task {
   final String id;
@@ -22,7 +21,7 @@ class Task {
     return {
       'id': id,
       'title': title,
-      'color': color.value,
+      'color': color.value.toUnsigned(32).toString(),
       'targetDuration': targetDuration.inMinutes,
     };
   }
@@ -31,7 +30,7 @@ class Task {
     return Task(
       id: json['id'],
       title: json['title'],
-      color: Color(json['color']),
+      color: Color(int.parse(json['color'])),
       targetDuration: Duration(minutes: json['targetDuration']),
     );
   }

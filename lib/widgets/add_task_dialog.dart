@@ -98,7 +98,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                                 : null,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withAlpha(51),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),

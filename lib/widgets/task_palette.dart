@@ -63,7 +63,7 @@ class TaskPalette extends StatelessWidget {
   Widget _buildTaskCard(Task task, Duration usedDuration, bool isDragging,
       {double opacity = 1.0}) {
     return Card(
-      color: task.color.withOpacity(opacity),
+      color: task.color.withAlpha((opacity * 255).round()),
       elevation: isDragging ? 8 : 2,
       child: Container(
         height: 80,

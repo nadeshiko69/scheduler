@@ -42,7 +42,8 @@ class TimeTableView extends StatelessWidget {
               children: List.generate(_calculateSlotCount(), (index) {
                 final currentTime = _indexToTime(index);
                 return DragTarget<Task>(
-                  onAccept: (task) => onTaskDrop(task, currentTime),
+                  onAcceptWithDetails: (details) =>
+                      onTaskDrop(details.data, currentTime),
                   builder: (context, candidateData, rejectedData) {
                     return Container(
                       height: 40,
@@ -211,11 +212,11 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
           },
           child: Container(
             decoration: BoxDecoration(
-              color: widget.scheduleItem.task.color.withOpacity(0.8),
+              color: widget.scheduleItem.task.color.withAlpha(204),
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(26),
                   offset: const Offset(0, 2),
                   blurRadius: 4,
                 ),
@@ -284,7 +285,7 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
             child: Container(
               height: 16,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withAlpha(26),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(8),
                   bottomRight: Radius.circular(8),
@@ -295,7 +296,7 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
                   width: 20,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withAlpha(128), // 0.5 * 255 ≈ 128
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
