@@ -9,6 +9,22 @@ class ExtendedTimeOfDay {
     required this.minute,
   });
 
+  // 追加: JSONシリアライズ用のメソッド
+  Map<String, dynamic> toJson() {
+    return {
+      'hour': hour,
+      'minute': minute,
+    };
+  }
+
+  // 追加: JSON逆シリアライズ用のファクトリメソッド
+  factory ExtendedTimeOfDay.fromJson(Map<String, dynamic> json) {
+    return ExtendedTimeOfDay(
+      hour: json['hour'] as int,
+      minute: json['minute'] as int,
+    );
+  }
+
   factory ExtendedTimeOfDay.fromTimeOfDay(TimeOfDay time) {
     return ExtendedTimeOfDay(hour: time.hour, minute: time.minute);
   }

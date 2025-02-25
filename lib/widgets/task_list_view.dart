@@ -17,6 +17,6 @@ class TaskListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(); // TODO: Implement task list view
+    return Container();
   }
 }

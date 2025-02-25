@@ -221,7 +221,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       setState(() {
         tasks.add(newTask);
       });
-      _saveData();
+      await _saveData();
     }
   }
 
@@ -384,37 +384,55 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Future<void> _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    // タスクの読み込み
-    final tasksString = prefs.getString('tasks');
-    if (tasksString != null) {
-      final tasksJson = jsonDecode(tasksString) as List;
-      setState(() {
-        tasks = tasksJson.map((json) => Task.fromJson(json)).toList();
-      });
-    }
+      // タスクの読み込み
+      final tasksJson = prefs.getStringList('tasks') ?? [];
+      // print('保存されているタスク: $tasksJson'); // デバッグ用
 
-    // スケジュールの読み込み
-    final scheduleString = prefs.getString('schedule');
-    if (scheduleString != null) {
-      final scheduleJson = jsonDecode(scheduleString) as List;
+      final loadedTasks =
+          tasksJson.map((json) => Task.fromJson(jsonDecode(json))).toList();
+
+      // スケジュールの読み込み
+      final schedulesJson = prefs.getStringList('schedules') ?? [];
+      // print('保存されているスケジュール: $schedulesJson'); // デバッグ用
+
+      final loadedSchedules = schedulesJson.map((json) {
+        final data = jsonDecode(json);
+        return ScheduleItem.fromJson(data);
+      }).toList();
+
       setState(() {
-        scheduleItems =
-            scheduleJson.map((json) => ScheduleItem.fromJson(json)).toList();
+        tasks = loadedTasks;
+        scheduleItems = loadedSchedules;
       });
+
+      // print('データを読み込みました'); // デバッグ用
+    } catch (e) {
+      // print('データの読み込みに失敗しました: $e'); // デバッグ用
+      // エラーハンドリング（必要に応じてユーザーに通知）
     }
   }
 
   Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    // タスクの保存
-    final tasksJson = tasks.map((task) => task.toJson()).toList();
-    await prefs.setString('tasks', jsonEncode(tasksJson));
+      // タスクの保存
+      final tasksJson = tasks.map((task) => jsonEncode(task.toJson())).toList();
+      await prefs.setStringList('tasks', tasksJson);
 
-    // スケジュールの保存
-    final scheduleJson = scheduleItems.map((item) => item.toJson()).toList();
-    await prefs.setString('schedule', jsonEncode(scheduleJson));
+      // スケジュールの保存
+      final schedulesJson = scheduleItems
+          .map((schedule) => jsonEncode(schedule.toJson()))
+          .toList();
+      await prefs.setStringList('schedules', schedulesJson);
+
+      // print('データを保存しました'); // デバッグ用
+    } catch (e) {
+      // print('データの保存に失敗しました: $e'); // デバッグ用
+      // エラーハンドリング（必要に応じてユーザーに通知）
+    }
   }
 }
