@@ -16,4 +16,22 @@ class Task {
     required this.color,
     required this.targetDuration,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'color': color.value.toUnsigned(32).toString(),
+      'targetDuration': targetDuration.inMinutes,
+    };
+  }
+
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['id'],
+      title: json['title'],
+      color: Color(int.parse(json['color'])),
+      targetDuration: Duration(minutes: json['targetDuration']),
+    );
+  }
 }
