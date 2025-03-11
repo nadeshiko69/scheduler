@@ -13,6 +13,7 @@ import '../setting/setting_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/task_palette.dart';
 import '../widgets/add_task_dialog.dart';
+import '../widgets/extended_time_picker.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -25,8 +26,8 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  TimeOfDay startTime = const TimeOfDay(hour: 6, minute: 0);
-  TimeOfDay endTime = const TimeOfDay(hour: 22, minute: 0);
+  ExtendedTimeOfDay startTime = const ExtendedTimeOfDay(hour: 6, minute: 0);
+  ExtendedTimeOfDay endTime = const ExtendedTimeOfDay(hour: 22, minute: 0);
 
   // テスト用のタスクデータ
   List<Task> tasks = [
@@ -206,9 +207,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _handleTimeSlotTap(TimeOfDay time) {
+  void _handleTimeSlotTap(ExtendedTimeOfDay time) {
     // 時間枠タップ時の処理
-    // print('Tapped time: ${time.hour}:${time.minute}');
   }
 
   void _showAddTaskDialog() async {
@@ -225,13 +225,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  void _handleTaskDrop(Task task, TimeOfDay startTime) {
+  void _handleTaskDrop(Task task, ExtendedTimeOfDay startTime) {
     setState(() {
       scheduleItems.add(
         ScheduleItem(
           id: DateTime.now().toString(),
           task: task,
-          startTime: startTime,
+          startTime: startTime.toTimeOfDay(),
           endTime: TimeOfDay(
             hour: startTime.hour + 1,
             minute: startTime.minute,
@@ -275,7 +275,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  void _handleScheduleResize(ScheduleItem item, TimeOfDay newEndTime) {
+  void _handleScheduleResize(ScheduleItem item, ExtendedTimeOfDay newEndTime) {
     setState(() {
       final index = scheduleItems.indexWhere((i) => i.id == item.id);
       if (index != -1) {
@@ -283,7 +283,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           id: item.id,
           task: item.task,
           startTime: item.startTime,
-          endTime: newEndTime,
+          endTime: newEndTime.toTimeOfDay(),
         );
       }
     });
@@ -300,11 +300,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      startTime = TimeOfDay(
+      startTime = ExtendedTimeOfDay(
         hour: prefs.getInt('startHour') ?? 6,
         minute: prefs.getInt('startMinute') ?? 0,
       );
-      endTime = TimeOfDay(
+      endTime = ExtendedTimeOfDay(
         hour: prefs.getInt('endHour') ?? 22,
         minute: prefs.getInt('endMinute') ?? 0,
       );

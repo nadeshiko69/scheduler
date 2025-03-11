@@ -7,14 +7,16 @@
 import 'package:flutter/material.dart';
 import '../models/schedule_item.dart';
 import '../models/task.dart';
+import './extended_time_picker.dart';
+import 'dart:async';
 
-class TimeTableView extends StatelessWidget {
-  final TimeOfDay startTime;
-  final TimeOfDay endTime;
+class TimeTableView extends StatefulWidget {
+  final ExtendedTimeOfDay startTime;
+  final ExtendedTimeOfDay endTime;
   final List<ScheduleItem> scheduleItems;
-  final Function(TimeOfDay) onTimeSlotTap;
-  final Function(Task, TimeOfDay) onTaskDrop;
-  final Function(ScheduleItem, TimeOfDay) onScheduleResize;
+  final Function(ExtendedTimeOfDay) onTimeSlotTap;
+  final Function(Task, ExtendedTimeOfDay) onTaskDrop;
+  final Function(ScheduleItem, ExtendedTimeOfDay) onScheduleResize;
   final Function(ScheduleItem) onScheduleDelete;
 
   const TimeTableView({
@@ -29,10 +31,61 @@ class TimeTableView extends StatelessWidget {
   });
 
   @override
+  State<TimeTableView> createState() => _TimeTableViewState();
+}
+
+class _TimeTableViewState extends State<TimeTableView> {
+  final ScrollController _scrollController = ScrollController();
+  Timer? _timer;
+  double? _currentTimePosition;
+
+  @override
+  void initState() {
+    super.initState();
+    // 初期化とスクロールを1つのpostFrameCallbackにまとめる
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateCurrentTimePosition();
+    });
+    // 1分ごとに更新
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _updateCurrentTimePosition();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateCurrentTimePosition() {
+    final now = TimeOfDay.now();
+    setState(() {
+      _currentTimePosition = _calculateTopPosition(now);
+    });
+    if (mounted) {
+      _scrollToCurrentTime();
+    }
+  }
+
+  void _scrollToCurrentTime() {
+    if (_currentTimePosition != null && mounted) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      _scrollController.animateTo(
+        _currentTimePosition! - (screenHeight / 2),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final totalHeight = _calculateSlotCount() * 40.0; // 全体の高さを計算
+    final totalHeight = _calculateSlotCount() * 40.0;
 
     return SingleChildScrollView(
+      controller: _scrollController,
       child: SizedBox(
         height: totalHeight,
         child: Stack(
@@ -43,7 +96,7 @@ class TimeTableView extends StatelessWidget {
                 final currentTime = _indexToTime(index);
                 return DragTarget<Task>(
                   onAcceptWithDetails: (details) =>
-                      onTaskDrop(details.data, currentTime),
+                      _onTaskDrop(details.data, currentTime),
                   builder: (context, candidateData, rejectedData) {
                     return Container(
                       height: 40,
@@ -87,7 +140,7 @@ class TimeTableView extends StatelessWidget {
               top: 0,
               bottom: 0,
               child: Stack(
-                children: scheduleItems.map((item) {
+                children: widget.scheduleItems.map((item) {
                   final top = _calculateTopPosition(item.startTime);
                   final height = _calculateHeight(item.startTime, item.endTime);
 
@@ -101,14 +154,37 @@ class TimeTableView extends StatelessWidget {
                       child: _ResizableScheduleItem(
                         scheduleItem: item,
                         onResize: (newEndTime) =>
-                            onScheduleResize(item, newEndTime),
-                        onDelete: () => onScheduleDelete(item),
+                            _onScheduleResize(item, newEndTime),
+                        onDelete: () => _onScheduleDelete(item),
                       ),
                     ),
                   );
                 }).toList(),
               ),
             ),
+            // 現在時刻のマーカー
+            if (_currentTimePosition != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: _currentTimePosition,
+                child: Container(
+                  height: 2,
+                  color: Colors.red,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -116,7 +192,7 @@ class TimeTableView extends StatelessWidget {
   }
 
   double _calculateTopPosition(TimeOfDay time) {
-    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
     final currentMinutes = time.hour * 60 + time.minute;
     return ((currentMinutes - startMinutes) / 30) * 40;
   }
@@ -128,13 +204,13 @@ class TimeTableView extends StatelessWidget {
   }
 
   int _calculateSlotCount() {
-    final startMinutes = startTime.hour * 60 + startTime.minute;
-    final endMinutes = endTime.hour * 60 + endTime.minute;
+    final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
+    final endMinutes = widget.endTime.hour * 60 + widget.endTime.minute;
     return ((endMinutes - startMinutes) / 30).ceil();
   }
 
   TimeOfDay _indexToTime(int index) {
-    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
     final currentMinutes = startMinutes + (index * 30);
     return TimeOfDay(
       hour: currentMinutes ~/ 60,
@@ -144,6 +220,18 @@ class TimeTableView extends StatelessWidget {
 
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _onTaskDrop(Task task, TimeOfDay time) {
+    widget.onTaskDrop(task, ExtendedTimeOfDay.fromTimeOfDay(time));
+  }
+
+  void _onScheduleResize(ScheduleItem item, TimeOfDay newEndTime) {
+    widget.onScheduleResize(item, ExtendedTimeOfDay.fromTimeOfDay(newEndTime));
+  }
+
+  void _onScheduleDelete(ScheduleItem item) {
+    widget.onScheduleDelete(item);
   }
 }
 
