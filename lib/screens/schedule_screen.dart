@@ -15,8 +15,10 @@ import '../widgets/task_palette.dart';
 import '../widgets/add_task_dialog.dart';
 import '../widgets/extended_time_picker.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -28,6 +30,9 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   ExtendedTimeOfDay startTime = const ExtendedTimeOfDay(hour: 6, minute: 0);
   ExtendedTimeOfDay endTime = const ExtendedTimeOfDay(hour: 22, minute: 0);
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  Timer? _notificationTimer;
 
   // テスト用のタスクデータ
   List<Task> tasks = [
@@ -66,6 +71,63 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _loadAd();
     _loadRewardedAd();
     _loadData();
+    // 1分ごとに予定をチェック
+    _notificationTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _checkSchedules();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    _bannerAd?.dispose();
+    _rewardedAd?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeNotifications() async {
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+    const initializationSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  void _checkSchedules() {
+    final now = DateTime.now();
+    final currentTime = TimeOfDay.fromDateTime(now);
+
+    for (final schedule in scheduleItems) {
+      if (schedule.startTime.hour == currentTime.hour &&
+          schedule.startTime.minute == currentTime.minute) {
+        _showNotification(schedule);
+      }
+    }
+  }
+
+  Future<void> _showNotification(ScheduleItem schedule) async {
+    const androidDetails = AndroidNotificationDetails(
+      'schedule_notification_channel',
+      'スケジュール通知',
+      channelDescription: 'スケジュールの開始時刻を通知します',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails();
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      schedule.id.hashCode,
+      '予定の開始時刻です',
+      '${schedule.task.title}の時間になりました',
+      notificationDetails,
+    );
   }
 
   void _loadAd() {
@@ -112,13 +174,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    _rewardedAd?.dispose();
-    super.dispose();
   }
 
   @override
