@@ -394,11 +394,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (_isRewardedAdReady && _rewardedAd != null) {
         try {
           _rewardedAd?.show(
-            onUserEarnedReward: (_, reward) {
+            onUserEarnedReward: (_, reward) async {
               if (!mounted) return;
               setState(() {
                 scheduleItems.clear();
               });
+              // 保存されているスケジュールデータを削除
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('schedules');
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('タイムテーブルをクリーンしました'),
@@ -415,7 +419,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           setState(() {
             scheduleItems.clear();
           });
-          // エラー時もメッセージを表示
+          // 保存されているスケジュールデータを削除
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('schedules');
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('タイムテーブルをクリーンしました'),
@@ -427,7 +434,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         setState(() {
           scheduleItems.clear();
         });
-        // 広告なしでクリアした場合もメッセージを表示
+        // 保存されているスケジュールデータを削除
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('schedules');
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('タイムテーブルをクリーンしました'),
