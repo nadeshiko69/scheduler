@@ -4,12 +4,13 @@
 
 import 'package:flutter/material.dart';
 import 'task.dart';
+import '../widgets/extended_time_picker.dart';
 
 class ScheduleItem {
   final String id;
   final Task task;
-  final TimeOfDay startTime;
-  final TimeOfDay endTime;
+  final ExtendedTimeOfDay startTime;
+  final ExtendedTimeOfDay endTime;
 
   ScheduleItem({
     required this.id,
@@ -31,11 +32,11 @@ class ScheduleItem {
     return ScheduleItem(
       id: json['id'],
       task: Task.fromJson(json['task']),
-      startTime: TimeOfDay(
+      startTime: ExtendedTimeOfDay(
         hour: json['startTime']['hour'],
         minute: json['startTime']['minute'],
       ),
-      endTime: TimeOfDay(
+      endTime: ExtendedTimeOfDay(
         hour: json['endTime']['hour'],
         minute: json['endTime']['minute'],
       ),

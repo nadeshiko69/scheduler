@@ -62,7 +62,8 @@ class _TimeTableViewState extends State<TimeTableView> {
   void _updateCurrentTimePosition() {
     final now = TimeOfDay.now();
     setState(() {
-      _currentTimePosition = _calculateTopPosition(now);
+      _currentTimePosition =
+          _calculateTopPosition(ExtendedTimeOfDay.fromTimeOfDay(now));
     });
     if (mounted) {
       _scrollToCurrentTime();
@@ -191,13 +192,13 @@ class _TimeTableViewState extends State<TimeTableView> {
     );
   }
 
-  double _calculateTopPosition(TimeOfDay time) {
+  double _calculateTopPosition(ExtendedTimeOfDay time) {
     final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
     final currentMinutes = time.hour * 60 + time.minute;
     return ((currentMinutes - startMinutes) / 30) * 40;
   }
 
-  double _calculateHeight(TimeOfDay start, TimeOfDay end) {
+  double _calculateHeight(ExtendedTimeOfDay start, ExtendedTimeOfDay end) {
     final startMinutes = start.hour * 60 + start.minute;
     final endMinutes = end.hour * 60 + end.minute;
     return ((endMinutes - startMinutes) / 30) * 40;
@@ -209,25 +210,27 @@ class _TimeTableViewState extends State<TimeTableView> {
     return ((endMinutes - startMinutes) / 30).ceil();
   }
 
-  TimeOfDay _indexToTime(int index) {
+  ExtendedTimeOfDay _indexToTime(int index) {
     final startMinutes = widget.startTime.hour * 60 + widget.startTime.minute;
     final currentMinutes = startMinutes + (index * 30);
-    return TimeOfDay(
+    return ExtendedTimeOfDay(
       hour: currentMinutes ~/ 60,
       minute: currentMinutes % 60,
     );
   }
 
-  String _formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  String _formatTime(ExtendedTimeOfDay time) {
+    final hour = time.hour >= 24 ? time.hour - 24 : time.hour;
+    final suffix = time.hour >= 24 ? '(翌)' : '';
+    return '${hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}$suffix';
   }
 
-  void _onTaskDrop(Task task, TimeOfDay time) {
-    widget.onTaskDrop(task, ExtendedTimeOfDay.fromTimeOfDay(time));
+  void _onTaskDrop(Task task, ExtendedTimeOfDay time) {
+    widget.onTaskDrop(task, time);
   }
 
-  void _onScheduleResize(ScheduleItem item, TimeOfDay newEndTime) {
-    widget.onScheduleResize(item, ExtendedTimeOfDay.fromTimeOfDay(newEndTime));
+  void _onScheduleResize(ScheduleItem item, ExtendedTimeOfDay newEndTime) {
+    widget.onScheduleResize(item, newEndTime);
   }
 
   void _onScheduleDelete(ScheduleItem item) {
@@ -237,7 +240,7 @@ class _TimeTableViewState extends State<TimeTableView> {
 
 class _ResizableScheduleItem extends StatefulWidget {
   final ScheduleItem scheduleItem;
-  final Function(TimeOfDay) onResize;
+  final Function(ExtendedTimeOfDay) onResize;
   final VoidCallback onDelete;
 
   const _ResizableScheduleItem({
@@ -252,15 +255,15 @@ class _ResizableScheduleItem extends StatefulWidget {
 
 class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
   double? _dragStartY;
-  TimeOfDay? _originalEndTime;
+  ExtendedTimeOfDay? _originalEndTime;
   static const double timeSlotHeight = 40.0; // 30分の高さ
   static const int minutesPerSlot = 30;
   static const int resizeStep = 15; // 15分単位に変更
 
-  TimeOfDay _snapToNearestStep(TimeOfDay time) {
+  ExtendedTimeOfDay _snapToNearestStep(ExtendedTimeOfDay time) {
     final totalMinutes = time.hour * 60 + time.minute;
     final snappedMinutes = (totalMinutes / resizeStep).round() * resizeStep;
-    return TimeOfDay(
+    return ExtendedTimeOfDay(
       hour: snappedMinutes ~/ 60,
       minute: snappedMinutes % 60,
     );
@@ -357,7 +360,7 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
                 final newMinutes = originalMinutes + deltaMinutes.floor();
 
                 // 15分単位にスナップ
-                final snappedTime = _snapToNearestStep(TimeOfDay(
+                final snappedTime = _snapToNearestStep(ExtendedTimeOfDay(
                   hour: newMinutes ~/ 60,
                   minute: newMinutes % 60,
                 ));
@@ -396,7 +399,7 @@ class _ResizableScheduleItemState extends State<_ResizableScheduleItem> {
     );
   }
 
-  String _formatTime(TimeOfDay time) {
+  String _formatTime(ExtendedTimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 }

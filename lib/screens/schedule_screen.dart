@@ -286,8 +286,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ScheduleItem(
           id: DateTime.now().toString(),
           task: task,
-          startTime: startTime.toTimeOfDay(),
-          endTime: TimeOfDay(
+          startTime: startTime,
+          endTime: ExtendedTimeOfDay(
             hour: startTime.hour + 1,
             minute: startTime.minute,
           ),
@@ -338,7 +338,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           id: item.id,
           task: item.task,
           startTime: item.startTime,
-          endTime: newEndTime.toTimeOfDay(),
+          endTime: newEndTime,
         );
       }
     });
