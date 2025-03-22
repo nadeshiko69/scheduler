@@ -13,9 +13,12 @@ import '../setting/setting_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/task_palette.dart';
 import '../widgets/add_task_dialog.dart';
+import '../widgets/extended_time_picker.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -25,8 +28,11 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  TimeOfDay startTime = const TimeOfDay(hour: 6, minute: 0);
-  TimeOfDay endTime = const TimeOfDay(hour: 22, minute: 0);
+  ExtendedTimeOfDay startTime = const ExtendedTimeOfDay(hour: 6, minute: 0);
+  ExtendedTimeOfDay endTime = const ExtendedTimeOfDay(hour: 22, minute: 0);
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  Timer? _notificationTimer;
 
   // テスト用のタスクデータ
   List<Task> tasks = [
@@ -65,6 +71,63 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _loadAd();
     _loadRewardedAd();
     _loadData();
+    // 1分ごとに予定をチェック
+    _notificationTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _checkSchedules();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    _bannerAd?.dispose();
+    _rewardedAd?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeNotifications() async {
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+    const initializationSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  void _checkSchedules() {
+    final now = DateTime.now();
+    final currentTime = TimeOfDay.fromDateTime(now);
+
+    for (final schedule in scheduleItems) {
+      if (schedule.startTime.hour == currentTime.hour &&
+          schedule.startTime.minute == currentTime.minute) {
+        _showNotification(schedule);
+      }
+    }
+  }
+
+  Future<void> _showNotification(ScheduleItem schedule) async {
+    const androidDetails = AndroidNotificationDetails(
+      'schedule_notification_channel',
+      'スケジュール通知',
+      channelDescription: 'スケジュールの開始時刻を通知します',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails();
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      schedule.id.hashCode,
+      '予定の開始時刻です',
+      '${schedule.task.title}の時間になりました',
+      notificationDetails,
+    );
   }
 
   void _loadAd() {
@@ -111,13 +174,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    _rewardedAd?.dispose();
-    super.dispose();
   }
 
   @override
@@ -206,9 +262,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  void _handleTimeSlotTap(TimeOfDay time) {
+  void _handleTimeSlotTap(ExtendedTimeOfDay time) {
     // 時間枠タップ時の処理
-    // print('Tapped time: ${time.hour}:${time.minute}');
   }
 
   void _showAddTaskDialog() async {
@@ -225,14 +280,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  void _handleTaskDrop(Task task, TimeOfDay startTime) {
+  void _handleTaskDrop(Task task, ExtendedTimeOfDay startTime) {
     setState(() {
       scheduleItems.add(
         ScheduleItem(
           id: DateTime.now().toString(),
           task: task,
           startTime: startTime,
-          endTime: TimeOfDay(
+          endTime: ExtendedTimeOfDay(
             hour: startTime.hour + 1,
             minute: startTime.minute,
           ),
@@ -275,7 +330,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  void _handleScheduleResize(ScheduleItem item, TimeOfDay newEndTime) {
+  void _handleScheduleResize(ScheduleItem item, ExtendedTimeOfDay newEndTime) {
     setState(() {
       final index = scheduleItems.indexWhere((i) => i.id == item.id);
       if (index != -1) {
@@ -300,11 +355,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      startTime = TimeOfDay(
+      startTime = ExtendedTimeOfDay(
         hour: prefs.getInt('startHour') ?? 6,
         minute: prefs.getInt('startMinute') ?? 0,
       );
-      endTime = TimeOfDay(
+      endTime = ExtendedTimeOfDay(
         hour: prefs.getInt('endHour') ?? 22,
         minute: prefs.getInt('endMinute') ?? 0,
       );
@@ -339,11 +394,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (_isRewardedAdReady && _rewardedAd != null) {
         try {
           _rewardedAd?.show(
-            onUserEarnedReward: (_, reward) {
+            onUserEarnedReward: (_, reward) async {
               if (!mounted) return;
               setState(() {
                 scheduleItems.clear();
               });
+              // 保存されているスケジュールデータを削除
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('schedules');
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('タイムテーブルをクリーンしました'),
@@ -360,7 +419,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           setState(() {
             scheduleItems.clear();
           });
-          // エラー時もメッセージを表示
+          // 保存されているスケジュールデータを削除
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('schedules');
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('タイムテーブルをクリーンしました'),
@@ -372,7 +434,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         setState(() {
           scheduleItems.clear();
         });
-        // 広告なしでクリアした場合もメッセージを表示
+        // 保存されているスケジュールデータを削除
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('schedules');
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('タイムテーブルをクリーンしました'),

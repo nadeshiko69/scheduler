@@ -1,0 +1,2 @@
+D:/Git/scheduler/android/app/.cxx/RelWithDebInfo/h514265b/x86_64/CMakeFiles/edit_cache.dir
+D:/Git/scheduler/android/app/.cxx/RelWithDebInfo/h514265b/x86_64/CMakeFiles/rebuild_cache.dir
